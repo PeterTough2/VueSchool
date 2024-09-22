@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
+use App\Models\User;
 
 class UserAPIUpdate implements ShouldQueue
 {
@@ -28,8 +28,12 @@ class UserAPIUpdate implements ShouldQueue
      */
     public function handle()
     {
-        foreach ($this->batch as $user) {
-            Log::info("[{$user->id}] firstname: {$user->name}, timezone: '{$user->timezone}'");
+        $usersToUpdate = User::where('has_changes', true)->get();
+
+        $batches = $usersToUpdate->chunk(1000);
+
+        foreach ($batches as $batch) {
+            $this->dispatch(new UpdateUserBatchJob($batch));
         }
     }
 }
